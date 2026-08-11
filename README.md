@@ -1,6 +1,6 @@
 # Document Assembly Line community meetings
 
-To add a meeting or change meeting details, edit `meetings.json`. Here is an example:
+To add a meeting or change meeting details, edit [`meetings.json`](https://github.com/SuffolkLITLab/DALMeetings/blob/main/meetings.json). Here is an example:
 
 ```json
 {
@@ -17,7 +17,7 @@ To add a meeting or change meeting details, edit `meetings.json`. Here is an exa
 
 Notes:
 
-- `timeZone` can be any of a limited set of[ IANA time zones](https://www.iana.org/time-zones) and aliases, found at the beginning of `main.js`
+- `timeZone` can be any of a limited set of[ IANA time zones](https://www.iana.org/time-zones) and aliases, found at the beginning of [`main.js`](https://github.com/SuffolkLITLab/DALMeetings/blob/main/assets/js/main.js)
 - All properties except `endTime` and `note` are required
 - `<strong>` and `<em>` are allowed in `title`, `note`, and `meetingLinkText`
 - No build step is required, but you can use `http-server` to preview changes before comitting them
