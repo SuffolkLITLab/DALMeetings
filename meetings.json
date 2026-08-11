@@ -39,9 +39,9 @@
 		},
 		{
 			"title": "Michelle's office hours",
-			"day": "Wednesday",
-			"startTime": "9 AM",
-			"endTime": "11 AM",
+			"day": "Thursday",
+			"startTime": "12 PM",
+			"endTime": "2 PM",
 			"timeZone": "Eastern",
 			"meetingLinkText": "<strong>Coding help</strong> in Teams",
 			"meetingLinkURL": "https://teams.microsoft.com/l/channel/19%3Ae16e9e9701a5445ea4035b5cb776a4cc%40thread.tacv2/Coding%20help?groupId=eaa9bd9d-cf39-4686-8f30-e55aa9d98c75&tenantId=78733fa9-540e-4eb8-bf29-73c4eeb63412"
