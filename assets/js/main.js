@@ -119,10 +119,10 @@ function createMeetingElement(meeting, timeZone) {
   title.innerHTML = meeting.title || 'Untitled meeting';
   article.appendChild(title);
 
-  if (meeting.schedulingNote) {
+  if (meeting.note) {
     const note = document.createElement('p');
     note.className = 'meetingNote';
-    note.textContent = meeting.schedulingNote;
+    note.textContent = meeting.note;
     article.appendChild(note);
   }
 
