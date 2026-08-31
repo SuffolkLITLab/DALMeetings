@@ -19,6 +19,15 @@
 			"meetingLinkURL": "https://suffolk.zoom.us/j/95053079942"
 		},
 		{
+			"title": "Documentation task force",
+			"day": "Monday",
+			"startTime": "2:00 PM",
+			"endTime": "2:45 PM",
+			"timeZone": "Eastern",
+			"meetingLinkText": "Zoom",
+			"meetingLinkURL": "https://suffolk.zoom.us/j/94366393935"
+		},
+		{
 			"title": "Michelle's office hours",
 			"day": "Tuesday",
 			"startTime": "4:00 PM",
