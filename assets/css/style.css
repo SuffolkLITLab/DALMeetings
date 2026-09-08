@@ -11,6 +11,8 @@ html {
 	--suffolk-gold-light: rgba(253, 185, 36, .2);
 	--suffolk-purple: #6d2077;
 
+	--text-light: SlateGray;
+
 	--font-size-xs: clamp(.64rem, 0.64rem + ((1vw - 0.2rem) * 0.318), .8rem);
 	--font-size-sm: clamp(.8rem, 0.8rem + ((1vw - 0.2rem) * 0.398), 1rem);
 	--font-size-normal: 1.125rem;
@@ -121,6 +123,24 @@ a {
 
 	.meetingNote {
 		color: SlateGray;
+		font-size: var(--font-size-xs);
+	}
+
+	.meetingLink {
+		display: block;
+	}
+
+	.addToCalendarLinksLabel {
+		color: var(--text-light);
+		font-size: var(--font-size-xs);
+	}
+
+	.addToCalendarLinks {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0 .5em;
+		padding: 0;
+		list-style: none;
 		font-size: var(--font-size-xs);
 	}
 }
