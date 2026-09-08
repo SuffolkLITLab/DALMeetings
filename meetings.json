@@ -6,6 +6,12 @@
 			"endTime": "11:50 AM",
 			"timeZone": "Eastern",
 			"note": "Held the first Monday of each quarter",
+			"recurrence": {
+				"frequency": "monthly",
+				"interval": 3,
+				"weekOfMonth": 1,
+				"startDate": "2026-06-01"
+			},
 			"meetingLinkText": "Zoom",
 			"meetingLinkURL": "https://suffolk.zoom.us/j/300578492"
 		},
@@ -15,6 +21,10 @@
 			"startTime": "1:00 PM",
 			"endTime": "1:50 PM",
 			"timeZone": "Eastern",
+			"recurrence": { 
+				"frequency": "weekly", 
+				"interval": 1
+			},
 			"meetingLinkText": "Zoom",
 			"meetingLinkURL": "https://suffolk.zoom.us/j/95053079942"
 		},
@@ -25,6 +35,11 @@
 			"endTime": "2:45 PM",
 			"timeZone": "Eastern",
 			"note": "Every other week",
+			"recurrence": {
+				"frequency": "weekly",
+				"interval": 2,
+				"startDate": "2026-09-14"
+			},
 			"meetingLinkText": "Zoom",
 			"meetingLinkURL": "https://suffolk.zoom.us/j/94366393935"
 		},
@@ -34,6 +49,10 @@
 			"startTime": "4:00 PM",
 			"endTime": "6:00 PM",
 			"timeZone": "Eastern",
+			"recurrence": { 
+				"frequency": "weekly", 
+				"interval": 1
+			},
 			"meetingLinkText": "<strong>Coding help</strong> in Teams",
 			"meetingLinkURL": "https://teams.microsoft.com/l/channel/19%3Ae16e9e9701a5445ea4035b5cb776a4cc%40thread.tacv2/Coding%20help?groupId=eaa9bd9d-cf39-4686-8f30-e55aa9d98c75&tenantId=78733fa9-540e-4eb8-bf29-73c4eeb63412"
 		},
@@ -44,6 +63,10 @@
 			"endTime": "3:50 PM",
 			"timeZone": "Central",
 			"note": "Held the first Wednesday of each month",
+			"recurrence": { 
+				"frequency": "monthly", 
+				"weekOfMonth": 1 
+			},
 			"meetingLinkText": "Zoom",
 			"meetingLinkURL": "https://suffolk.zoom.us/meeting/register/tJAsce-oqTorGd3QACxQDBwGGGnVK8tehTaV"
 		},
@@ -62,6 +85,10 @@
 			"startTime": "12:30 PM",
 			"endTime": "1:30 PM",
 			"timeZone": "Eastern",
+			"recurrence": { 
+				"frequency": "weekly", 
+				"interval": 1
+			},
 			"meetingLinkText": "Zoom",
 			"meetingLinkURL": "https://suffolk.zoom.us/j/300578492"
 		}
