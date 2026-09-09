@@ -54,6 +54,21 @@
 			"meetingLinkURL": "https://suffolk.zoom.us/j/94366393935"
 		},
 		{
+			"title": "LITEfile road-to-launch check-in",
+			"day": "Monday",
+			"startTime": "2:00 PM",
+			"endTime": "2:30 PM",
+			"timeZone": "Eastern",
+			"note": "Every other week",
+			"recurrence": {
+				"frequency": "weekly",
+				"interval": 2,
+				"startDate": "2026-09-21"
+			},
+			"meetingLinkText": "Zoom",
+			"meetingLinkURL": "https://suffolk.zoom.us/j/96201828662"
+		},
+		{
 			"title": "Michelle's office hours",
 			"day": "Tuesday",
 			"startTime": "4:00 PM",
