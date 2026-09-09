@@ -63,7 +63,7 @@
 			"recurrence": {
 				"frequency": "weekly",
 				"interval": 2,
-				"startDate": "2026-09-21"
+				"startDate": "2026-09-14"
 			},
 			"meetingLinkText": "Zoom",
 			"meetingLinkURL": "https://suffolk.zoom.us/j/96201828662"
