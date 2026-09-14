@@ -3,6 +3,8 @@ const TIME_ZONE_ALIASES = Object.freeze({
   central: 'America/Chicago',
   mountain: 'America/Denver',
   pacific: 'America/Los_Angeles',
+  alaska: 'America/Anchorage',
+  hawaii: 'Pacific/Honolulu',
   london: 'Europe/London',
   paris: 'Europe/Paris',
   berlin: 'Europe/Berlin',
