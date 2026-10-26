@@ -150,14 +150,20 @@ function createMeetingElement(meeting, timeZone) {
     article.appendChild(link);
   }
 
-  if (meeting.startTime && meeting.endTime && endTime) {
-    const [startText, endText] = formatMeetingTimes(meeting, timeZone).split('–');
-    startTime.textContent = startText.trim();
-    endTime.textContent = endText.trim();
+  const hasValidRecurrence = validateRecurrence(meeting);
+  const occurrenceDate = hasValidRecurrence ? getMeetingOccurrenceDate(meeting) : getMeetingDate(meeting);
+
+  if (meeting.startTime) {
+    const [startText, endText] = formatMeetingTimes(meeting, timeZone, occurrenceDate);
+    startTime.textContent = startText;
+
+    if (endTime) {
+      endTime.textContent = endText;
+    }
   }
 
-  if (meeting.startTime && meeting.day) {
-    article.appendChild(createAddToCalendarLinks(meeting));
+  if (meeting.startTime && meeting.day && hasValidRecurrence) {
+    article.appendChild(createAddToCalendarLinks(meeting, occurrenceDate));
   }
 
   return article;
@@ -187,17 +193,28 @@ function getMeetingDate(meeting) {
   return meetingDate;
 }
 
+const offsetFormatters = new Map();
+
+function getOffsetFormatter(timeZone) {
+  if (!offsetFormatters.has(timeZone)) {
+    // hourCycle h23 rather than hour12: false, which some browsers render as "24" at midnight.
+    offsetFormatters.set(timeZone, new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    }));
+  }
+
+  return offsetFormatters.get(timeZone);
+}
+
 function getTimeZoneOffsetMinutes(timeZone, date) {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  });
+  const formatter = getOffsetFormatter(timeZone);
 
   const parts = Object.fromEntries(
     formatter.formatToParts(date).filter((part) => ['year', 'month', 'day', 'hour', 'minute', 'second'].includes(part.type)).map((part) => [part.type, part.value])
@@ -221,29 +238,11 @@ function createDateInTimeZone(baseTimeZone, year, month, day, hour, minute) {
   return new Date(localDate.getTime() - offsetMinutes * 60000);
 }
 
-function formatMeetingTimes(meeting, timeZone) {
-  const meetingDate = getMeetingDate(meeting);
-  const [startHour, startMinute] = parseTimeString(meeting.startTime);
-  const [endHour, endMinute] = parseTimeString(meeting.endTime);
+// Converts on the meeting's actual next occurrence (not just the next matching weekday), so the
+// displayed times match the add-to-calendar links even when a DST change falls in between.
+function formatMeetingTimes(meeting, timeZone, occurrenceDate) {
   const baseTimeZone = resolveTimeZone(meeting.timeZone);
   const targetTimeZone = resolveTimeZone(timeZone);
-
-  const startDate = createDateInTimeZone(
-    baseTimeZone,
-    meetingDate.getFullYear(),
-    meetingDate.getMonth(),
-    meetingDate.getDate(),
-    startHour,
-    startMinute
-  );
-  const endDate = createDateInTimeZone(
-    baseTimeZone,
-    meetingDate.getFullYear(),
-    meetingDate.getMonth(),
-    meetingDate.getDate(),
-    endHour,
-    endMinute
-  );
 
   const formatter = new Intl.DateTimeFormat(undefined, {
     hour: 'numeric',
@@ -251,7 +250,19 @@ function formatMeetingTimes(meeting, timeZone) {
     timeZone: targetTimeZone
   });
 
-  return `${formatter.format(startDate)}–${formatter.format(endDate)}`;
+  const toDisplayTime = (value) => {
+    const [hour, minute] = parseTimeString(value);
+    return formatter.format(createDateInTimeZone(
+      baseTimeZone,
+      occurrenceDate.getFullYear(),
+      occurrenceDate.getMonth(),
+      occurrenceDate.getDate(),
+      hour,
+      minute
+    ));
+  };
+
+  return [toDisplayTime(meeting.startTime), meeting.endTime ? toDisplayTime(meeting.endTime) : null];
 }
 
 function parseTimeString(value) {
@@ -301,6 +312,146 @@ function escapeICSText(value) {
 
 function formatDateTimeForCalendar(year, month, day, hour, minute) {
   return `${year}${pad(month + 1)}${pad(day)}T${pad(hour)}${pad(minute)}00`;
+}
+
+function formatUTCDateTimeForCalendar(date) {
+  return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
+}
+
+function formatUTCOffset(minutes) {
+  const sign = minutes < 0 ? '-' : '+';
+  const absoluteMinutes = Math.abs(minutes);
+  return `${sign}${pad(Math.floor(absoluteMinutes / 60))}${pad(absoluteMinutes % 60)}`;
+}
+
+// Narrows a UTC offset change between startTime and endTime down to the first minute of the new offset.
+function findOffsetTransition(timeZone, startTime, endTime) {
+  const offsetFrom = getTimeZoneOffsetMinutes(timeZone, new Date(startTime));
+  let low = startTime;
+  let high = endTime;
+
+  while (high - low > 60000) {
+    const middle = low + Math.floor((high - low) / 120000) * 60000;
+
+    if (getTimeZoneOffsetMinutes(timeZone, new Date(middle)) === offsetFrom) {
+      low = middle;
+    } else {
+      high = middle;
+    }
+  }
+
+  return { time: high, offsetFrom, offsetTo: getTimeZoneOffsetMinutes(timeZone, new Date(high)) };
+}
+
+function describeOffsetTransition(transition) {
+  // VTIMEZONE observances start at the wall-clock time just before the change, in the old offset.
+  const localTime = new Date(transition.time + transition.offsetFrom * 60000);
+  const year = localTime.getUTCFullYear();
+  const month = localTime.getUTCMonth();
+  const day = localTime.getUTCDate();
+  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+
+  return {
+    ...transition,
+    year,
+    month,
+    day,
+    hour: localTime.getUTCHours(),
+    minute: localTime.getUTCMinutes(),
+    weekday: localTime.getUTCDay(),
+    weekOfMonth: Math.ceil(day / 7),
+    isLastWeekOfMonth: day + 7 > daysInMonth
+  };
+}
+
+function getOffsetTransitions(timeZone, fromYear, toYear) {
+  const transitions = [];
+
+  for (let year = fromYear; year <= toYear; year++) {
+    for (let month = 0; month < 12; month++) {
+      const monthStart = Date.UTC(year, month, 1);
+      const monthEnd = Date.UTC(year, month + 1, 1);
+
+      if (getTimeZoneOffsetMinutes(timeZone, new Date(monthStart)) !== getTimeZoneOffsetMinutes(timeZone, new Date(monthEnd))) {
+        transitions.push(describeOffsetTransition(findOffsetTransition(timeZone, monthStart, monthEnd)));
+      }
+    }
+  }
+
+  return transitions;
+}
+
+function buildTimeZoneObservance(transitions) {
+  const [first] = transitions;
+  const name = first.offsetTo > first.offsetFrom ? 'DAYLIGHT' : 'STANDARD';
+  const lines = [
+    `BEGIN:${name}`,
+    `DTSTART:${formatDateTimeForCalendar(first.year, first.month, first.day, first.hour, first.minute)}`,
+    `TZOFFSETFROM:${formatUTCOffset(first.offsetFrom)}`,
+    `TZOFFSETTO:${formatUTCOffset(first.offsetTo)}`
+  ];
+
+  const followsYearlyRule = transitions.every((transition) => (
+    transition.month === first.month &&
+    transition.weekday === first.weekday &&
+    transition.hour === first.hour &&
+    transition.minute === first.minute
+  ));
+  const dayAbbreviation = DAY_ABBREVIATIONS[DAY_NAMES[first.weekday]];
+
+  if (followsYearlyRule && first.weekOfMonth <= 4 && transitions.every((transition) => transition.weekOfMonth === first.weekOfMonth)) {
+    lines.push(`RRULE:FREQ=YEARLY;BYMONTH=${first.month + 1};BYDAY=${first.weekOfMonth}${dayAbbreviation}`);
+  } else if (followsYearlyRule && transitions.every((transition) => transition.isLastWeekOfMonth)) {
+    lines.push(`RRULE:FREQ=YEARLY;BYMONTH=${first.month + 1};BYDAY=-1${dayAbbreviation}`);
+  } else {
+    // Rules that don't fit "nth weekday of the month" (e.g. Jerusalem) get explicit dates instead.
+    transitions.slice(1).forEach((transition) => {
+      lines.push(`RDATE:${formatDateTimeForCalendar(transition.year, transition.month, transition.day, transition.hour, transition.minute)}`);
+    });
+  }
+
+  lines.push(`END:${name}`);
+  return lines;
+}
+
+const vTimeZoneCache = new Map();
+
+// Builds the VTIMEZONE definition that RFC 5545 requires for every TZID an .ics file uses. Without
+// it, some clients (notably Outlook) misread TZID-qualified times as local or UTC.
+function buildVTimeZone(timeZone, year) {
+  const cacheKey = `${timeZone}|${year}`;
+
+  if (vTimeZoneCache.has(cacheKey)) {
+    return vTimeZoneCache.get(cacheKey);
+  }
+
+  // Start a year early so the observances cover the event's start, and look ahead far enough
+  // to confirm each transition follows a consistent yearly rule.
+  const transitions = getOffsetTransitions(timeZone, year - 1, year + 9);
+  const lines = ['BEGIN:VTIMEZONE', `TZID:${timeZone}`];
+
+  if (transitions.length === 0) {
+    const offset = formatUTCOffset(getTimeZoneOffsetMinutes(timeZone, new Date(Date.UTC(year, 0, 1))));
+    lines.push('BEGIN:STANDARD', 'DTSTART:19700101T000000', `TZOFFSETFROM:${offset}`, `TZOFFSETTO:${offset}`, 'END:STANDARD');
+  } else {
+    const transitionsByOffsets = new Map();
+
+    transitions.forEach((transition) => {
+      const key = `${transition.offsetFrom}/${transition.offsetTo}`;
+
+      if (!transitionsByOffsets.has(key)) {
+        transitionsByOffsets.set(key, []);
+      }
+
+      transitionsByOffsets.get(key).push(transition);
+    });
+
+    transitionsByOffsets.forEach((group) => lines.push(...buildTimeZoneObservance(group)));
+  }
+
+  lines.push('END:VTIMEZONE');
+  vTimeZoneCache.set(cacheKey, lines);
+  return lines;
 }
 
 function getNthWeekdayOfMonth(year, month, dayIndex, weekOfMonth) {
@@ -382,6 +533,17 @@ function getNextWeeklyOccurrenceFromAnchor(today, anchorDate, interval) {
   return addDays(anchorDate, Math.ceil(diffDays / intervalDays) * intervalDays);
 }
 
+function validateRecurrence(meeting) {
+  const recurrence = meeting.recurrence;
+
+  if (recurrence?.frequency === 'monthly' && ![1, 2, 3, 4, -1].includes(recurrence.weekOfMonth)) {
+    console.warn(`"${toPlainText(meeting.title)}" is monthly but has no valid recurrence.weekOfMonth (1-4 or -1), so its calendar links were left out.`);
+    return false;
+  }
+
+  return true;
+}
+
 function getMeetingOccurrenceDate(meeting) {
   const recurrence = meeting.recurrence || { frequency: 'weekly', interval: 1 };
   const interval = recurrence.interval || 1;
@@ -414,13 +576,21 @@ function getMeetingOccurrenceDate(meeting) {
 function buildRRule(meeting) {
   const recurrence = meeting.recurrence || { frequency: 'weekly', interval: 1 };
   const interval = recurrence.interval || 1;
+  let until = '';
+
+  if (recurrence.endDate) {
+    // UNTIL must be in UTC when DTSTART has a TZID, so use the end of endDate in the meeting's time zone.
+    const endDate = parseISODate(recurrence.endDate);
+    const lastMoment = createDateInTimeZone(resolveTimeZone(meeting.timeZone), endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59);
+    until = `;UNTIL=${formatUTCDateTimeForCalendar(lastMoment)}`;
+  }
 
   if (recurrence.frequency === 'monthly') {
     const dayAbbreviation = DAY_ABBREVIATIONS[meeting.day];
-    return `FREQ=MONTHLY;INTERVAL=${interval};BYDAY=${recurrence.weekOfMonth}${dayAbbreviation}`;
+    return `FREQ=MONTHLY;INTERVAL=${interval};BYDAY=${recurrence.weekOfMonth}${dayAbbreviation}${until}`;
   }
 
-  return `FREQ=WEEKLY;INTERVAL=${interval}`;
+  return `FREQ=WEEKLY;INTERVAL=${interval}${until}`;
 }
 
 function buildGoogleCalendarURL(meeting, occurrenceDate, startHour, startMinute, endHour, endMinute, rrule) {
@@ -454,16 +624,21 @@ function buildICS(meeting, occurrenceDate, startHour, startMinute, endHour, endM
   const month = occurrenceDate.getMonth();
   const day = occurrenceDate.getDate();
   const now = new Date();
-  const dtStamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
   const uid = `${toPlainText(meeting.title).replace(/\s+/g, '-').toLowerCase()}-${meeting.day.toLowerCase()}@dalmeetings.suffolklitlab.org`;
+  // The UID stays the same across downloads, so a newer download needs a higher SEQUENCE for
+  // calendars to treat it as an update. Minutes since the epoch always increases and fits in 32 bits.
+  const sequence = Math.floor(now.getTime() / 60000);
 
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Suffolk LIT Lab//DAL Community Meetings//EN',
+    'METHOD:PUBLISH',
+    ...buildVTimeZone(timeZone, year),
     'BEGIN:VEVENT',
     `UID:${uid}`,
-    `DTSTAMP:${dtStamp}`,
+    `SEQUENCE:${sequence}`,
+    `DTSTAMP:${formatUTCDateTimeForCalendar(now)}`,
     `DTSTART;TZID=${timeZone}:${formatDateTimeForCalendar(year, month, day, startHour, startMinute)}`,
     `DTEND;TZID=${timeZone}:${formatDateTimeForCalendar(year, month, day, endHour, endMinute)}`,
     `RRULE:${rrule}`,
@@ -483,7 +658,7 @@ function buildICS(meeting, occurrenceDate, startHour, startMinute, endHour, endM
   return lines.join('\r\n');
 }
 
-function createAddToCalendarLinks(meeting) {
+function createAddToCalendarLinks(meeting, occurrenceDate) {
   const fragment = document.createDocumentFragment();
 
   const label = document.createElement('p');
@@ -494,7 +669,6 @@ function createAddToCalendarLinks(meeting) {
   const list = document.createElement('ul');
   list.className = 'addToCalendarLinks';
 
-  const occurrenceDate = getMeetingOccurrenceDate(meeting);
   const [startHour, startMinute] = parseTimeString(meeting.startTime);
   const [endHour, endMinute] = parseTimeString(meeting.endTime || meeting.startTime);
   const rrule = buildRRule(meeting);

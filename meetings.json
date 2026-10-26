@@ -71,8 +71,9 @@
 			"endTime": "3:50 PM",
 			"timeZone": "Central",
 			"note": "Held the first Wednesday of each month",
-			"recurrence": { 
-				"frequency": "monthly"
+			"recurrence": {
+				"frequency": "monthly",
+				"weekOfMonth": 1
 			},
 			"meetingLinkText": "Zoom",
 			"meetingLinkURL": "https://suffolk.zoom.us/j/94166071139"

@@ -26,4 +26,5 @@ Notes:
   - `interval` (optional, default `1`): repeat every this many weeks/months — e.g. `2` for biweekly, `3` for quarterly
   - `weekOfMonth` (required when `frequency` is `"monthly"`): which occurrence of `day` in the month, `1`–`4`, or `-1` for the last one
   - `startDate` (required whenever `interval` is greater than `1`): an ISO date (`YYYY-MM-DD`) that falls on `day` and is a real occurrence of the meeting. Without it there's no way to tell which week/month is the "on" one for a biweekly or quarterly-style cadence (e.g. "every 3 months" could mean Jan/Apr/Jul/Oct or Feb/May/Aug/Nov depending on where it actually falls.
+  - `endDate` (optional): an ISO date (`YYYY-MM-DD`) after which the meeting stops repeating. It becomes the `UNTIL` of the calendar event's recurrence rule.
 - No build step is required, but you can use `http-server` to preview changes before comitting them
