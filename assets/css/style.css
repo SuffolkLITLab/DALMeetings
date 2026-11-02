@@ -66,6 +66,10 @@ a {
 		font-size: var(--font-size-huge);
 		text-transform: uppercase;
 	}
+
+	a {
+		color: white;
+	}
 }
 
 .schedule {
