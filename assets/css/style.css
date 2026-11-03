@@ -49,26 +49,48 @@ a {
 
 .header {
 	background-color: var(--suffolk-blue);
+	color: white;
+	display: grid;
+	gap: .5em 1em;
+	grid-template-areas:
+		"header nav"
+		"subheader subheader"
+	;
+	grid-template-columns: 1fr max-content;
 	padding: 1.5em 1em;
 
-	> * {
-		margin: 0 0 .25em 0;
+	h1 {
+		margin: 0;
 	}
 	
 	.subtitle {
-		color: White;
 		font-size: var(--font-size-lg);
 		font-weight: normal;
+		grid-area: header;
 	}
 	
 	.title {
 		color: var(--suffolk-gold);
 		font-size: var(--font-size-huge);
+		grid-area: header;
 		text-transform: uppercase;
 	}
 
-	.timeZoneNotice {
-		color: White;
+	.nav {
+		display: flex;
+		gap: .25em;
+		grid-area: nav;
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.timeZone {
+		grid-area: subheader;
+	}
+
+	a {
+		color: white;
 	}
 }
 
@@ -142,5 +164,24 @@ a {
 		padding: 0;
 		list-style: none;
 		font-size: var(--font-size-xs);
+	}
+}
+
+.icon {
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: 100%;
+	display: inline-block;
+	height: var(--font-size-lg);
+	opacity: .75;
+	text-indent: -9999px;
+	width: var(--font-size-lg);
+
+	&:hover {
+		opacity: 1;
+	}
+
+	&.githubIcon {
+		background-image: url(../img/github.svg);
 	}
 }
